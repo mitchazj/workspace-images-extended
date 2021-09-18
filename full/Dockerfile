@@ -13,46 +13,59 @@ RUN curl -o /var/lib/apt/dazzle-marks/llvm.gpg -fsSL https://apt.llvm.org/llvm-s
     && apt-key add /var/lib/apt/dazzle-marks/llvm.gpg \
     && echo "deb https://apt.llvm.org/focal/ llvm-toolchain-focal main" >> /etc/apt/sources.list.d/llvm.list \
     && install-packages \
-        clang \
-        clangd \
-        clang-format \
-        clang-tidy \
-        gdb \
-        lld
+    clang \
+    clangd \
+    clang-format \
+    clang-tidy \
+    gdb \
+    lld
 
 ### Apache, PHP and Nginx ###
 LABEL dazzle/layer=tool-nginx
 LABEL dazzle/test=tests/lang-php.yaml
 USER root
 ENV TRIGGER_REBUILD=3
+RUN apt install software-properties-common
+RUN add-apt-repository ppa:ondrej/php
+RUN apt update
 RUN install-packages \
-        apache2 \
-        nginx \
-        nginx-extras \
-        composer \
-        php \
-        php-all-dev \
-        php-bcmath \
-        php-ctype \
-        php-curl \
-        php-date \
-        php-gd \
-        php-intl \
-        php-json \
-        php-mbstring \
-        php-mysql \
-        php-net-ftp \
-        php-pgsql \
-        php-sqlite3 \
-        php-tokenizer \
-        php-xml \
-        php-zip \
+    apache2 \
+    nginx \
+    nginx-extras \
+    php8.0 \
+    php8.0-dev \
+    \
+    # Issues Here
+    # php8.0-all-dev \
+    # php8.0-date \
+    # php8.0-json NOTE: this is included by default now! \ 
+    # php8.0-net-ftp \
+    # 
+    # Consider Adding:
+    # - redis
+    # - imagick
+    \
+    php8.0-bcmath \
+    php8.0-ctype \
+    php8.0-curl \
+    php8.0-gd \
+    php8.0-intl \
+    php8.0-mbstring \
+    php8.0-mysql \
+    php8.0-pgsql \
+    php8.0-sqlite3 \
+    php8.0-tokenizer \
+    php8.0-xml \
+    php8.0-zip \
     && mkdir -p /var/run/nginx \
     && ln -s /etc/apache2/mods-available/rewrite.load /etc/apache2/mods-enabled/rewrite.load \
     && chown -R gitpod:gitpod /etc/apache2 /var/run/apache2 /var/lock/apache2 /var/log/apache2 \
     && chown -R gitpod:gitpod /etc/nginx /var/run/nginx /var/lib/nginx/ /var/log/nginx/
 COPY --chown=gitpod:gitpod apache2/ /etc/apache2/
 COPY --chown=gitpod:gitpod nginx /etc/nginx/
+
+# install composer too
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 ## The directory relative to your git repository that will be served by Apache / Nginx
 ENV APACHE_DOCROOT_IN_REPO="public"
@@ -82,19 +95,19 @@ ENV GOPATH=$HOME/go-packages
 ENV GOROOT=$HOME/go
 ENV PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 RUN curl -fsSL https://storage.googleapis.com/golang/go$GO_VERSION.linux-amd64.tar.gz | tar xzs && \
-# install VS Code Go tools for use with gopls as per https://github.com/golang/vscode-go/blob/master/docs/tools.md
-# also https://github.com/golang/vscode-go/blob/27bbf42a1523cadb19fad21e0f9d7c316b625684/src/goTools.ts#L139
+    # install VS Code Go tools for use with gopls as per https://github.com/golang/vscode-go/blob/master/docs/tools.md
+    # also https://github.com/golang/vscode-go/blob/27bbf42a1523cadb19fad21e0f9d7c316b625684/src/goTools.ts#L139
     go get -v \
-        github.com/uudashr/gopkgs/cmd/gopkgs@v2 \
-        github.com/ramya-rao-a/go-outline \
-        github.com/cweill/gotests/gotests \
-        github.com/fatih/gomodifytags \
-        github.com/josharian/impl \
-        github.com/haya14busa/goplay/cmd/goplay \
-        github.com/go-delve/delve/cmd/dlv \
-        github.com/golangci/golangci-lint/cmd/golangci-lint && \
+    github.com/uudashr/gopkgs/cmd/gopkgs@v2 \
+    github.com/ramya-rao-a/go-outline \
+    github.com/cweill/gotests/gotests \
+    github.com/fatih/gomodifytags \
+    github.com/josharian/impl \
+    github.com/haya14busa/goplay/cmd/goplay \
+    github.com/go-delve/delve/cmd/dlv \
+    github.com/golangci/golangci-lint/cmd/golangci-lint && \
     GO111MODULE=on go get -v \
-        golang.org/x/tools/gopls@v0.7.2 && \
+    golang.org/x/tools/gopls@v0.7.2 && \
     sudo rm -rf $GOPATH/src $GOPATH/pkg /home/gitpod/.cache/go /home/gitpod/.cache/go-build
 # user Go packages
 ENV GOPATH=/workspace/go
@@ -106,16 +119,16 @@ LABEL dazzle/layer=lang-java
 LABEL dazzle/test=tests/lang-java.yaml
 USER gitpod
 RUN curl -fsSL "https://get.sdkman.io" | bash \
- && bash -c ". /home/gitpod/.sdkman/bin/sdkman-init.sh \
-             && sdk install java 11.0.12.fx-zulu \
-             && sdk install gradle \
-             && sdk install maven \
-             && sdk flush archives \
-             && sdk flush temp \
-             && mkdir /home/gitpod/.m2 \
-             && printf '<settings>\n  <localRepository>/workspace/m2-repository/</localRepository>\n</settings>\n' > /home/gitpod/.m2/settings.xml \
-             && echo 'export SDKMAN_DIR=\"/home/gitpod/.sdkman\"' >> /home/gitpod/.bashrc.d/99-java \
-             && echo '[[ -s \"/home/gitpod/.sdkman/bin/sdkman-init.sh\" ]] && source \"/home/gitpod/.sdkman/bin/sdkman-init.sh\"' >> /home/gitpod/.bashrc.d/99-java"
+    && bash -c ". /home/gitpod/.sdkman/bin/sdkman-init.sh \
+    && sdk install java 11.0.12.fx-zulu \
+    && sdk install gradle \
+    && sdk install maven \
+    && sdk flush archives \
+    && sdk flush temp \
+    && mkdir /home/gitpod/.m2 \
+    && printf '<settings>\n  <localRepository>/workspace/m2-repository/</localRepository>\n</settings>\n' > /home/gitpod/.m2/settings.xml \
+    && echo 'export SDKMAN_DIR=\"/home/gitpod/.sdkman\"' >> /home/gitpod/.bashrc.d/99-java \
+    && echo '[[ -s \"/home/gitpod/.sdkman/bin/sdkman-init.sh\" ]] && source \"/home/gitpod/.sdkman/bin/sdkman-init.sh\"' >> /home/gitpod/.bashrc.d/99-java"
 # above, we are adding the sdkman init to .bashrc (executing sdkman-init.sh does that), because one is executed on interactive shells, the other for non-interactive shells (e.g. plugin-host)
 ENV GRADLE_USER_HOME=/workspace/.gradle/
 
@@ -127,9 +140,9 @@ ENV NODE_VERSION=14.17.6
 ENV TRIGGER_REBUILD=1
 RUN curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | PROFILE=/dev/null bash \
     && bash -c ". .nvm/nvm.sh \
-        && nvm install $NODE_VERSION \
-        && nvm alias default $NODE_VERSION \
-        && npm install -g typescript yarn node-gyp" \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && npm install -g typescript yarn node-gyp" \
     && echo ". ~/.nvm/nvm-lazy.sh"  >> /home/gitpod/.bashrc.d/50-node
 # above, we are adding the lazy nvm init to .bashrc, because one is executed on interactive shells, the other for non-interactive shells (e.g. plugin-host)
 COPY --chown=gitpod:gitpod nvm-lazy.sh /home/gitpod/.nvm/nvm-lazy.sh
@@ -144,16 +157,16 @@ RUN sudo install-packages python3-pip
 ENV PATH=$HOME/.pyenv/bin:$HOME/.pyenv/shims:$PATH
 RUN curl -fsSL https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash \
     && { echo; \
-        echo 'eval "$(pyenv init -)"'; \
-        echo 'eval "$(pyenv virtualenv-init -)"'; } >> /home/gitpod/.bashrc.d/60-python \
+    echo 'eval "$(pyenv init -)"'; \
+    echo 'eval "$(pyenv virtualenv-init -)"'; } >> /home/gitpod/.bashrc.d/60-python \
     && pyenv update \
     && pyenv install 3.8.12 \
     && pyenv global 3.8.12 \
     && python3 -m pip install --no-cache-dir --upgrade pip \
     && python3 -m pip install --no-cache-dir --upgrade \
-        setuptools wheel virtualenv pipenv pylint rope flake8 \
-        mypy autopep8 pep8 pylama pydocstyle bandit notebook \
-        twine \
+    setuptools wheel virtualenv pipenv pylint rope flake8 \
+    mypy autopep8 pep8 pylama pydocstyle bandit notebook \
+    twine \
     && sudo rm -rf /tmp/*
 ENV PIP_USER=no
 ENV PIPENV_VENV_IN_PROJECT=true
@@ -168,12 +181,12 @@ RUN curl -fsSL https://rvm.io/mpapis.asc | gpg --import - \
     && curl -fsSL https://rvm.io/pkuczynski.asc | gpg --import - \
     && curl -fsSL https://get.rvm.io | bash -s stable \
     && bash -lc " \
-        rvm requirements \
-        && rvm install 2.7.3 \
-        && rvm use 2.7.3 --default \
-        && rvm rubygems current \
-        && gem install bundler --no-document \
-        && gem install solargraph --no-document" \
+    rvm requirements \
+    && rvm install 2.7.3 \
+    && rvm use 2.7.3 --default \
+    && rvm rubygems current \
+    && gem install bundler --no-document \
+    && gem install solargraph --no-document" \
     && echo '[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*' >> /home/gitpod/.bashrc.d/70-ruby
 RUN echo "rvm_gems_path=/workspace/.rvm" > ~/.rvmrc
 
@@ -188,10 +201,10 @@ USER gitpod
 RUN cp /home/gitpod/.profile /home/gitpod/.profile_orig && \
     curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.55.0 \
     && .cargo/bin/rustup component add \
-        rls \
-        rust-analysis \
-        rust-src \
-        rustfmt \
+    rls \
+    rust-analysis \
+    rust-src \
+    rustfmt \
     && .cargo/bin/rustup completions bash | sudo tee /etc/bash_completion.d/rustup.bash-completion > /dev/null \
     && .cargo/bin/rustup completions bash cargo | sudo tee /etc/bash_completion.d/rustup.cargo-bash-completion > /dev/null \
     && grep -v -F -x -f /home/gitpod/.profile_orig /home/gitpod/.profile > /home/gitpod/.bashrc.d/80-rust
