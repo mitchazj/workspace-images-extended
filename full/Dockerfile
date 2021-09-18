@@ -36,10 +36,10 @@ RUN install-packages \
     php8.0-dev \
     \
     # Issues Here
-    # php8.0-all-dev \
-    # php8.0-date \
+    # php8.0-all-dev Replaced with php8.0-dev above \
+    # php8.0-date NOTE: this is included by default now! \
     # php8.0-json NOTE: this is included by default now! \ 
-    # php8.0-net-ftp \
+    # php8.0-net-ftp NOTE: this is included by default now! \
     # 
     # Consider Adding:
     # - redis
